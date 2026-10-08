@@ -95,7 +95,7 @@ export class TaskOrchestrator {
 
       const toolName = plan.selectedTool?.trim() || null;
 
-      if (plan.isTaskComplete || !toolName) {
+      if (!toolName) {
         this.addStepLog({
           step,
           reasoning: plan.reasoning,
@@ -154,6 +154,11 @@ export class TaskOrchestrator {
         timestamp: new Date().toLocaleTimeString(),
         screenSummary: screenDesc.slice(0, 150),
       });
+
+      if (plan.isTaskComplete) {
+        this.taskStateManager.transitionTo(TaskState.COMPLETED);
+        return;
+      }
 
       // Allow UI time to update after action
       await new Promise((resolve) => setTimeout(resolve, TaskOrchestrator.STEP_DELAY_MS));

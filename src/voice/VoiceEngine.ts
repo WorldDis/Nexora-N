@@ -10,6 +10,7 @@ export class VoiceEngine {
   private listeners: ((state: { isListening: boolean; transcript: string; feedback: string }) => void)[] = [];
   private currentTranscript: string = '';
   private lastFeedback: string = '';
+  private audioCtx: AudioContext | null = null;
 
   constructor(private taskStateManager: TaskStateManager) {
     this.initTts();
@@ -21,7 +22,6 @@ export class VoiceEngine {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       const updateVoices = () => {
         const voices = window.speechSynthesis.getVoices();
-        // Try finding Bengali voice, else Indian English or standard English
         const bnVoice = voices.find((v) => v.lang.startsWith('bn'));
         const enVoice = voices.find((v) => v.lang.includes('en-IN') || v.lang.includes('en-US'));
         this.synthesisVoice = bnVoice || enVoice || voices[0] || null;
@@ -66,15 +66,10 @@ export class VoiceEngine {
         };
 
         this.recognition.onerror = (event: any) => {
-          console.warn('Speech recognition error:', event.error);
-          this.isListening = false;
-          this.notify();
-          if (event.error !== 'no-speech') {
-            NexoraEventBus.emit({
-              type: 'ErrorOccurred',
-              message: `STT Error: ${event.error}`,
-            });
-            this.taskStateManager.transitionTo(TaskState.FAILED);
+          console.warn('Speech recognition warning:', event.error);
+          if (event.error === 'not-allowed') {
+            this.lastFeedback = 'Microphone permission allow korun (বা নিচের কমান্ড চাপুন)';
+            this.notify();
           }
         };
 
@@ -86,6 +81,30 @@ export class VoiceEngine {
         console.warn('SpeechRecognition initialization failed:', e);
       }
     }
+  }
+
+  private playChime(freq: number = 880): void {
+    try {
+      if (typeof window !== 'undefined') {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          if (!this.audioCtx) this.audioCtx = new AudioCtx();
+          if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+          }
+          const osc = this.audioCtx.createOscillator();
+          const gain = this.audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.08, this.audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.25);
+          osc.connect(gain);
+          gain.connect(this.audioCtx.destination);
+          osc.start();
+          osc.stop(this.audioCtx.currentTime + 0.25);
+        }
+      }
+    } catch {}
   }
 
   private observeEvents(): void {
@@ -113,27 +132,30 @@ export class VoiceEngine {
 
   startListening(): void {
     this.currentTranscript = '';
+    this.isListening = true;
     this.taskStateManager.transitionTo(TaskState.LISTENING);
+    this.playChime(950);
+    this.notify();
 
+    // Trigger SpeechRecognition if available
     if (this.recognition) {
       try {
         this.recognition.start();
-      } catch (e) {
-        console.warn('Already listening or recognition issue:', e);
+      } catch (e: any) {
+        // Recognition already started or error; still keep listening state active
+        console.log('Recognition start note:', e.message);
       }
-    } else {
-      this.isListening = true;
-      this.notify();
     }
   }
 
   stopListening(): void {
-    if (this.recognition && this.isListening) {
+    if (this.recognition) {
       try {
         this.recognition.stop();
       } catch (e) {}
     }
     this.isListening = false;
+    this.playChime(440);
     this.notify();
   }
 

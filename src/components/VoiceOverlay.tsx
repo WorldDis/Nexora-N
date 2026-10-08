@@ -178,9 +178,14 @@ export const VoiceOverlay: React.FC<VoiceOverlayProps> = ({
 
         {/* Floating "Bolo" (Speak) Button mimicking Android VoiceOverlayService */}
         <button
-          onClick={toggleListening}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleListening();
+          }}
           aria-label="Voice command shuru koro"
-          className={`relative flex items-center gap-2 px-5 py-3 rounded-full font-bold text-sm shadow-2xl transition-all duration-300 ${
+          className={`relative flex items-center gap-2 px-5 py-3 rounded-full font-bold text-sm shadow-2xl cursor-pointer transition-all duration-300 active:scale-95 ${
             isListening
               ? 'bg-gradient-to-r from-rose-600 to-red-500 text-white ring-4 ring-rose-500/40 animate-pulse'
               : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white ring-2 ring-cyan-400/40 hover:scale-105'

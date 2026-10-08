@@ -5,6 +5,14 @@ export interface VirtualScreenState {
   launchApp: (packageName: string) => boolean;
   highlightElement: (element: HTMLElement | null, label?: string) => void;
   scrollElement: (direction: 'FORWARD' | 'BACKWARD') => boolean;
+  answerCall?: () => void;
+  cutCall?: () => void;
+  placeCall?: (target: string) => void;
+  createItem?: (type: string, content: string) => void;
+  modifyItem?: (target: string, content: string) => void;
+  deleteItem?: (target: string) => void;
+  arrangeItems?: (sortBy: string) => void;
+  performSearch?: (query: string) => void;
 }
 
 class DeviceManager {
