@@ -1,0 +1,7 @@
+{
+  "name": "NEXORA — AI Accessibility & Action Agent",
+  "description": "Autonomous voice-controlled AI accessibility agent for semantic UI navigation, multi-step ReAct planning, zero-trust safety gates, and device action execution.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
